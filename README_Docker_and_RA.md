@@ -1,14 +1,7 @@
-# Raiko Docker Setup Tutorial
-
-This tutorial was created to assist you in setting up Raiko and its SGX dependencies using a Docker container. Configuring SGX can be complex without a detailed guide to walk you through each step. This tutorial strives to provide a comprehensive walkthrough, leaving no detail unaddressed.
-
 ## Recommended Specs
 
 We recommended 4 cores and 8GB memory for running Raiko. 8 cores and 16GB memory is ideal; the bare minimum is 2 cores and 4GB memory (tentative).
 
-## Prerequisites
-
-Intel SGX is a technology that involves a considerable amount of configuration. Given its high level of configurability, the setup of your infrastructure may vary significantly depending on the attestation type (EPID, ECDSA) and other parameters. While we've strived to minimize the manual effort required to prepare the development environment, there are certain prerequisites that are challenging, if not impossible, to automate using Dockerfiles. This section outlines these prerequisites.
 
 ### Intel SGX-enabled CPU
 
@@ -28,9 +21,6 @@ Ensure that your machine has an [Intel SGX][sgx]-enabled CPU to run Raiko. You c
     SGX: Software Guard Extensions supported = true
     ```
 
-    If this line doesn't appear, your CPU either doesn't support SGX, or it isn't enabled in the BIOS.
-
-As an alternative, you can execute `grep sgx /proc/cpuinfo`. If the command doesn't return any output, your CPU doesn't support SGX.
 
 [sgx]: https://www.intel.com/content/www/us/en/architecture-and-technology/software-guard-extensions.html
 [cpuid]: https://manpages.ubuntu.com/manpages/noble/en/man1/cpuid.1.html
@@ -45,12 +35,6 @@ To check the version of your kernel, run:
 uname -a
 ```
 
-If you're using Ubuntu and want to see the available Linux kernel versions, run the following command:
-
-```
-apt search linux-image
-```
-
 [kernel-5.11]: https://www.intel.com/content/www/us/en/developer/tools/software-guard-extensions/linux-overview.html
 [edmm]: https://gramine.readthedocs.io/en/stable/manifest-syntax.html#edmm
 
@@ -62,123 +46,27 @@ To use ECDSA Attestation, you need to subscribe to the Intel PCS service, follow
 
 > **_NOTE:_** You do NOT need to follow the entirety of the linked guide, just the `Subscribe to the Intel PCS` section.
 
-### Verify that your SGX machine has a compatible FMSPC
-
-At the moment Raiko only supports certain `fmspc`, so to prevent wasted time check if your machine is on our supported fmspc list.
-
-To retrieve this information, you will need to use the `PCKIDRetrievalTool` and query the Intel API.
-
-1. Retrieving PCK Certs
-
-We need to retrieve Intel's PCK Certificates
-
-Install the `PCKIDRetrievalTool`
-
-You can install either from the Ubuntu repository:
-```
-echo "deb [arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu focal main" | sudo tee /etc/apt/sources.list.d/intel-sgx.list > /dev/null
-wget -O - https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key | sudo apt-key add -
-sudo apt update
-sudo apt install sgx-pck-id-retrieval-tool
-```
-Or, you can [build and install][sgx-pck-id-retrieval-tool] it yourself.
-
-After you have installed it, You should be ready to retrieve fetch Intel's certificates!
-
-Run the following command:
-
-```
-PCKIDRetrievalTool
-```
-
-If successful, it should generate a `pckid_retrieval.csv`. This is a csv string which consists of:
-
-    1. EncryptedPPID(384 BE byte array)
-    2. PCE_ID(LE 16 bit integer)
-    3. CPUSVN(16 byte BE byte array)
-    4. PCE ISVSVN (LE 16 bit integer)
-    5. QE_ID (16 byte BE byte array)
-
-You will need this info to retrieve your FMSPC.
-
-2. Query Intel's API to get your machine's FMSPC
-
-```
-curl -v "https://api.trustedservices.intel.com/sgx/certification/v4/pckcert?encrypted_ppid={}&cpusvn={}&pcesvn={}&pceid={}" -H "Ocp-Apim-Subscription-Key:{YOUR_API_KEY}"
-```
-
-Replace the curly braces in the above command with the values acquired from `pckid_retrieval.csv` and `YOUR_API_KEY` with your API key from subsribing to Intel's PCS Service.
-
-The response should look as follows:
-
-```
-< HTTP/1.1 200 OK
-< Content-Length: 1777
-< Content-Type: application/x-pem-file
-< Request-ID: e3a32aaf6cd046c69674d5bd1f1af251
-< SGX-TCBm: 0B0B0303FFFF000000000000000000000D00
-< SGX-PCK-Certificate-Issuer-Chain: -----BEGIN%20CERTIFICATE----- ...
------END%20CERTIFICATE-----%0A
-< SGX-PCK-Certificate-CA-Type: platform
-< SGX-FMSPC: 00606A000000  <-- The FMSPC we want!
-< Date: Wed, 10 Jan 2024 02:57:40 GMT
-< 
------BEGIN CERTIFICATE-----
-MIIE8zCCBJmgAwIBAgIVALz+jYjxcX+fJomAUbCJqgifIol6MAoGCCqGSM49BAMC
-MHAxIjAgBgNVBAMMGUludGVsIFNHWCBQQ0sgUGxhdGZvcm0gQ0ExGjAYBgNVBAoM
-EUludGVsIENvcnBvcmF0aW9uMRQwEgYDVQQHDAtTYW50YSBDbGFyYTELMAkGA1UE
-CAwCQ0ExCzAJBgNVBAYTAlVTMB4XDTI0MDExMDAyNDI0MFoXDTMxMDExMDAyNDI0
-MFowcDEiMCAGA1UEAwwZSW50ZWwgU0dYIFBDSyBDZXJ0aWZpY2F0ZTEaMBgGA1UE
-CgwRSW50ZWwgQ29ycG9yYXRpb24xFDASBgNVBAcMC1NhbnRhIENsYXJhMQswCQYD
-VQQIDAJDQTELMAkGA1UEBhMCVVMwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQy
-sASrS6rkej14Hf1JSpuPO1NDUVyzXBCvp1h42F10UU0AFUWg1Y48oeBg7tvN5X2I
-TGEB5zHBjzjv9kuWyUjUo4IDDjCCAwowHwYDVR0jBBgwFoAUlW9dzb0b4elAScnU
-9DPOAVcL3lQwawYDVR0fBGQwYjBgoF6gXIZaaHR0cHM6Ly9hcGkudHJ1c3RlZHNl
-cnZpY2VzLmludGVsLmNvbS9zZ3gvY2VydGlmaWNhdGlvbi92NC9wY2tjcmw/Y2E9
-cGxhdGZvcm0mZW5jb2Rpbmc9ZGVyMB0GA1UdDgQWBBRTV6Zlz1vJkYSfkJj8Nifz
-qgawWDAOBgNVHQ8BAf8EBAMCBsAwDAYDVR0TAQH/BAIwADCCAjsGCSqGSIb4TQEN
-AQSCAiwwggIoMB4GCiqGSIb4TQENAQEEEP5GrgEczopNboM0sI0btAEwggFlBgoq
-hkiG+E0BDQECMIIBVTAQBgsqhkiG+E0BDQECAQIBCzAQBgsqhkiG+E0BDQECAgIB
-CzAQBgsqhkiG+E0BDQECAwIBAzAQBgsqhkiG+E0BDQECBAIBAzARBgsqhkiG+E0B
-DQECBQICAP8wEQYLKoZIhvhNAQ0BAgYCAgD/MBAGCyqGSIb4TQENAQIHAgEAMBAG
-CyqGSIb4TQENAQIIAgEAMBAGCyqGSIb4TQENAQIJAgEAMBAGCyqGSIb4TQENAQIK
-AgEAMBAGCyqGSIb4TQENAQILAgEAMBAGCyqGSIb4TQENAQIMAgEAMBAGCyqGSIb4
-TQENAQINAgEAMBAGCyqGSIb4TQENAQIOAgEAMBAGCyqGSIb4TQENAQIPAgEAMBAG
-CyqGSIb4TQENAQIQAgEAMBAGCyqGSIb4TQENAQIRAgENMB8GCyqGSIb4TQENAQIS
-BBALCwMD//8AAAAAAAAAAAAAMBAGCiqGSIb4TQENAQMEAgAAMBQGCiqGSIb4TQEN
-AQQEBgBgagAAADAPBgoqhkiG+E0BDQEFCgEBMB4GCiqGSIb4TQENAQYEEEWJzOvy
-ZE8K3kj/HhXEa/swRAYKKoZIhvhNAQ0BBzA2MBAGCyqGSIb4TQENAQcBAQH/MBAG
-CyqGSIb4TQENAQcCAQH/MBAGCyqGSIb4TQENAQcDAQH/MAoGCCqGSM49BAMCA0gA
-MEUCIE5VvyXrsalV8fp3Z0AbFWF4cfOJOSAaoJQLIji1TRLbAiEAsZwZGnme5EQr
-n7qROhU4OOJnVs9lqNxxi8AFrJJHU2E=
------END CERTIFICATE-----
-```
-
-Currently Supported FMSPCs:
-- 00606A000000
-- 00A067110000
-- 00906ED50000
-
-Please reach out to us in [discord](https://discord.com/invite/taikoxyz) channels if your machine doesn't have a listed FMSPC, if you've done the bootstrap process and obtained a quote we can try adding them to the On Chain RA process. We can't guarantee all FMSPCs will work, so you might have to switch machines.
-
-> **_NOTE:_** At the moment, we are aware of two cloud providers who offer compatible SGX machines: [*Tencent Cloud*](https://www.tencentcloud.com/document/product/213/45510), Alibaba Cloud and Azure. (Tencent Cloud is one of our ecosystem partners!) Specifically, Tencent Cloud's `M6ce` model, Alibaba Cloud's `g7t` model support `SGX-FMSPC 00606A000000` and Azure's `confidential compute` machines support `SGX-FMSPC 00906ED50000`.
-
-[sgx-pck-id-retrieval-tool]: https://github.com/intel/SGXDataCenterAttestationPrimitives/tree/main/tools/PCKRetrievalTool
-
-### Git
-
-You will need to clone our `raiko` repository and `taiko-mono` repository to run Raiko and perform on-chain attestation to begin proving. An easy way to do this is with [git](https://git-scm.com/download/linux).
-
-### Docker
-
-You will need `docker` CLI installed, please find your respective distribution [here](https://docs.docker.com/engine/install/) and follow the install guide.
 
 ### Gramine
 
-Raiko leverages [Intel SGX][sgx] via [Gramine][gramine]. As Gramine only supports [a limited number of distributions][gramine-distros], including Ubuntu. The Docker image is derived from Gramine's base image, which uses Ubuntu. Install your respective distribution [here](https://gramine.readthedocs.io/en/latest/installation.html).
+ Install your respective distribution [here](https://gramine.readthedocs.io/en/latest/installation.html).
+```
+sudo curl -fsSLo /usr/share/keyrings/gramine-keyring.gpg https://packages.gramineproject.io/gramine-keyring.gpg
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/gramine-keyring.gpg] https://packages.gramineproject.io/ $(lsb_release -sc) main" \
+| sudo tee /etc/apt/sources.list.d/gramine.list
+
+sudo curl -fsSLo /usr/share/keyrings/intel-sgx-deb.asc https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-sgx-deb.asc] https://download.01.org/intel-sgx/sgx_repo/ubuntu $(lsb_release -sc) main" \
+| sudo tee /etc/apt/sources.list.d/intel-sgx.list
+
+sudo apt-get update
+sudo apt-get install gramine
+```
+
 
 [gramine-distros]: https://github.com/gramineproject/gramine/discussions/1555#discussioncomment-7016800
 [gramine]: https://gramineproject.io/
+
 
 ## Raiko Docker
 
@@ -191,10 +79,6 @@ sudo apt-get update && sudo apt-get install -y build-essential wget python-is-py
 ```
 
 2. Generating PCCS Certificates
-
-Before running the Raiko Docker container, you need to fulfill some SGX-specific prerequisites, which include setting up the [PCCS][pccs-readme] (Provisioning Certificate Caching Service) configuration. The PCCS service is responsible for retrieving PCK Certificates and other collaterals on-demand from the internet at runtime, and then caching them in a local database. The PCCS exposes similar HTTPS interfaces as Intel's Provisioning Certificate Service.
-
-Begin the configuration process by [generating][pccs-cert-gen] an SSL certificate:
 
 ```
 mkdir ~/.config
@@ -220,15 +104,14 @@ cd ~/.config/sgx-pccs
 cp /opt/intel/sgx-dcap-pccs/config/default.json  .
 ```
 
-Make sure you've copied the `default.json` into the .config/sgx-pccs directory you created earlier. The `raiko` container will mount this as a volume. After copying the file, open it for editing and fill in the below listed parameters as recommended by [Intel's manual][pccs-cert-gen-config]:
+```
+hosts
+ApiKey
+echo -n "user_password" | sha512sum | tr -d '[:space:]-'
 
-- `ApiKey`: The PCCS uses this API key to request collaterals from Intel's Provisioning Certificate Service. User needs to subscribe first to obtain an API key. Use either the primary or secondary key you obtained from the previous step `Subscribing to Intel PCS Service`.
+echo -n "admin_password" | sha512sum | tr -d '[:space:]-'
 
-- `UserTokenHash`: SHA512 hash of the user token for the PCCS client user to register a platform. For example, PCK Cert ID retrieval tool will use the user token to send platform information to PCCS. (`echo -n "user_password" | sha512sum | tr -d '[:space:]-'`).
-
-- `AdminTokenHash`: SHA512 hash of the administrator token for the PCCS administrator to perform a manual refresh of cached artifacts (`echo -n "admin_password" | sha512sum | tr -d '[:space:]-'`).
-
-- `hosts`: replace it with "0.0.0.0".
+```
 
 Ensure docker can use it by modifying permissions to the file:
  
@@ -286,7 +169,6 @@ It should look something like this:
 }
 ```
 
-You've now prepared your machine for running Raiko through Docker. Now, you need to perform On-Chain Remote Attestation to recieve TTKOh and begin proving for Taiko!
 
 ## On-Chain RA
 
@@ -316,7 +198,7 @@ pnpm compile
 3. Prepare your prover's private key
 
 ```
-export PRIVATE_KEY={PROVER_PRIVATE_KEY} 
+export PRIVATE_KEY=
 ```
 
 4. Ensure the values in the `script/config_dcap_sgx_verifier.sh` script match
