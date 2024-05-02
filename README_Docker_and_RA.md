@@ -180,7 +180,7 @@ pnpm compile
 3. Prepare your prover's private key
 
 ```
-export PRIVATE_KEY={PROVER_PRIVATE_KEY} 
+export PRIVATE_KEY=
 ```
 
 4. Ensure the values in the `script/config_dcap_sgx_verifier.sh` script match
@@ -197,13 +197,24 @@ export PRIVATE_KEY={PROVER_PRIVATE_KEY}
 "quote": "0x030002......f00939a7233f79c4ca......9434154452d2d2d2d2d0a00"
 ```
 
-Take that quote and replace `V3_QUOTE_BYTES` in the `script/config_dcap_sgx_verifier.sh` script.
+```
+cd /home/ubuntu/.config/sgx-pccs/raiko/docker
+docker compose up init
+```
 
 6. In the `script/config_dcap_sgx_verifier.sh` script, replace `--fork-url https://any-holesky-rpc-url/` with any Holesky RPC URL.
 
+```
+cd /home/ubuntu/taiko-mono/packages/protocol
+    --fork-url https://rpc.holesky.ethpandaops.io \
+```
+
+
 7. Call the script with `./script/config_dcap_sgx_verifier.sh`.
 
-> **_NOTE:_**  If you already have QE/TCB/Enclave already configured you can change `export TASK_ENABLE="1,1,1,1,1"` to `export TASK_ENABLE="0,0,0,0,1"` to only register the SGX instance.
+```
+PRIVATE_KEY=0x ./script/config_dcap_sgx_verifier.sh --quote 00
+```
 
 8. If you've been successful, you will get a SGX instance `id` which can be used to run Raiko!
 
@@ -218,9 +229,10 @@ emit InstanceAdded(id: 1, instance: 0xc369eedf4C69CacceDa551390576EAd2383E6f9E, 
 Once you've completed the above steps, you can actually run a prover. Your `SGX_INSTANCE_ID` is the one emitted in the `InstanceAdded` event above.
 
 ```
-cd ~/raiko/docker
-export SGX_INSTANCE_ID={YOUR_INSTANCE_ID}
+cd /home/ubuntu/.config/sgx-pccs/raiko/docker
+export SGX_INSTANCE_ID=
 docker compose up raiko -d
+docker compose logs raiko
 ```
 
 If everything is working, you should see something like the following when executing `docker compose logs raiko`:
