@@ -6,13 +6,19 @@ We recommended 4 cores and 8GB memory for running Raiko. 8 cores and 16GB memory
 
 Ensure that your machine has an [Intel SGX][sgx]-enabled CPU to run Raiko. You can verify if your CPU supports SGX (Software Guard Extensions) on Linux by using the [`cpuid`][cpuid] tool.
 
-1. If `cpuid` isn't already installed, you can install it. On Ubuntu, use the following command:
+1. If `cpuid` isn't already installed, you can install it. On Ubuntu, use the following command
 
-        sudo apt-get install cpuid
+```
+sudo apt update
+sudo apt upgrade
+sudo apt-get install cpuid
+```
 
-2. Run `cpuid` and `grep` for `sgx`:
+3. Run `cpuid` and `grep` for `sgx`:
 
-        cpuid | grep -i sgx
+```
+cpuid | grep -i sgx
+```
 
     If your CPU supports SGX, the output should resemble the following:
 
@@ -40,6 +46,19 @@ uname -a
 ### Gramine
 
 Raiko leverages [Intel SGX][sgx] via [Gramine][gramine]. As Gramine only supports [a limited number of distributions][gramine-distros], including Ubuntu. The Docker image is derived from Gramine's base image, which uses Ubuntu. Install your respective distribution [here](https://gramine.readthedocs.io/en/latest/installation.html).
+
+```
+sudo curl -fsSLo /usr/share/keyrings/gramine-keyring.gpg https://packages.gramineproject.io/gramine-keyring.gpg
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/gramine-keyring.gpg] https://packages.gramineproject.io/ $(lsb_release -sc) main" \
+| sudo tee /etc/apt/sources.list.d/gramine.list
+
+sudo curl -fsSLo /usr/share/keyrings/intel-sgx-deb.asc https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-sgx-deb.asc] https://download.01.org/intel-sgx/sgx_repo/ubuntu $(lsb_release -sc) main" \
+| sudo tee /etc/apt/sources.list.d/intel-sgx.list
+
+sudo apt-get update
+sudo apt-get install gramine
+```
 
 [gramine-distros]: https://github.com/gramineproject/gramine/discussions/1555#discussioncomment-7016800
 [gramine]: https://gramineproject.io/
@@ -79,25 +98,24 @@ rm csr.pem
 > **_NOTE:_** The library requires nodejs 18, but regardless if installation succeeds or not, we just need the `default.json` file it comes with.
 
 ```
-apt install sgx-dcap-pccs
+↓失敗するが問題なし
+sudo apt install sgx-dcap-pccs
 cd ~/.config/sgx-pccs
-cp /opt/intel/sgx-dcap-pccs/config/default.json  .
+sudo cp /opt/intel/sgx-dcap-psudo nano default.json
+hosts
+ApiKey intel api
+UserTokenHash
+6ae2d3bfb3b95517b358fcdb29f7743246101ebf13f797d8244df795eec2d1d769a41c059dc37beadac8e40cecab4352764336a90302920ddeb1a6c6df4e8a00
+AdminTokenHash
+31a556961f3438f9f632ca27812d22228e98e5083eea2bf9b78d0bb374d44deb0dc4d1bc16ab64127eb74e8452ea6902d97937c28310a7ab62a9ae1c15d96d69
 ```
 
-Make sure you've copied the `default.json` into the .config/sgx-pccs directory you created earlier. The `raiko` container will mount this as a volume. After copying the file, open it for editing and fill in the below listed parameters as recommended by [Intel's manual][pccs-cert-gen-config]:
-
-- `ApiKey`: The PCCS uses this API key to request collaterals from Intel's Provisioning Certificate Service. User needs to subscribe first to obtain an API key. Use either the primary or secondary key you obtained from the previous step `Subscribing to Intel PCS Service`.
-
-- `UserTokenHash`: SHA512 hash of the user token for the PCCS client user to register a platform. For example, PCK Cert ID retrieval tool will use the user token to send platform information to PCCS. (`echo -n "user_password" | sha512sum | tr -d '[:space:]-'`).
-
-- `AdminTokenHash`: SHA512 hash of the administrator token for the PCCS administrator to perform a manual refresh of cached artifacts (`echo -n "admin_password" | sha512sum | tr -d '[:space:]-'`).
-
-- `hosts`: replace it with "0.0.0.0".
+Make sure you've copied the `default.json` into the .config/sgx-pccs directory you created earlier. 
 
 Ensure docker can use it by modifying permissions to the file:
  
 ```
-chmod 644 default.json
+sudo chmod 644 default.json
 ```
 
 [pccs-cert-gen-config]: https://github.com/intel/SGXDataCenterAttestationPrimitives/tree/master/QuoteGeneration/pccs/container#3-fill-up-configuration-file
@@ -173,6 +191,10 @@ foundryup
 Once you have installed them, run the following:
 
 ```
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+source ~/.bashrc
+nvm install --lts
+node -v
 pnpm install
 pnpm compile
 ```
@@ -181,6 +203,7 @@ pnpm compile
 
 ```
 export PRIVATE_KEY=
+echo $PRIVATE_KEY
 ```
 
 4. Ensure the values in the `script/config_dcap_sgx_verifier.sh` script match
@@ -202,17 +225,12 @@ cd /home/ubuntu/.config/sgx-pccs/raiko/docker
 docker compose up init
 ```
 
-6. In the `script/config_dcap_sgx_verifier.sh` script, replace `--fork-url https://any-holesky-rpc-url/` with any Holesky RPC URL.
-
-```
-cd /home/ubuntu/taiko-mono/packages/protocol
-    --fork-url https://rpc.holesky.ethpandaops.io \
-```
-
-
 7. Call the script with `./script/config_dcap_sgx_verifier.sh`.
 
 ```
+cd /home/ubuntu/taiko-mono/packages/protocol
+export FORK_URL=00
+echo $FORK_URL
 PRIVATE_KEY=0x ./script/config_dcap_sgx_verifier.sh --quote 00
 ```
 
@@ -221,6 +239,8 @@ PRIVATE_KEY=0x ./script/config_dcap_sgx_verifier.sh --quote 00
 It should look like this:
 
 ```
+  [log] register sgx instance index: 0000
+
 emit InstanceAdded(id: 1, instance: 0xc369eedf4C69CacceDa551390576EAd2383E6f9E, replaced: 0x0000000000000000000000000000000000000000, validSince: 1708704201 [1.708e9])
 ```
 
