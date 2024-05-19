@@ -229,7 +229,7 @@ docker compose up init
 
 ```
 cd /home/ubuntu/taiko-mono/packages/protocol
-export FORK_URL=00
+export FORK_URL=http://holesky_node_IP:8545
 echo $FORK_URL
 PRIVATE_KEY=0x ./script/config_dcap_sgx_verifier.sh --quote 00
 ```
