@@ -251,6 +251,7 @@ Once you've completed the above steps, you can actually run a prover. Your `SGX_
 ```
 cd /home/ubuntu/.config/sgx-pccs/raiko/docker
 export SGX_INSTANCE_ID=
+echo $SGX_INSTANCE_ID
 docker compose up raiko -d
 docker compose logs raiko
 ```
