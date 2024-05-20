@@ -18,13 +18,8 @@ sudo apt-get install cpuid
 
 ```
 cpuid | grep -i sgx
+SGX: Software Guard Extensions supported = true
 ```
-
-    If your CPU supports SGX, the output should resemble the following:
-
-    ```
-    SGX: Software Guard Extensions supported = true
-    ```
 
 [sgx]: https://www.intel.com/content/www/us/en/architecture-and-technology/software-guard-extensions.html
 [cpuid]: https://manpages.ubuntu.com/manpages/noble/en/man1/cpuid.1.html
