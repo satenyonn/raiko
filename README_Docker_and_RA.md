@@ -31,7 +31,11 @@ Starting with Linux kernel version [`5.11`][kernel-5.11], the kernel provides bu
 To check the version of your kernel, run:
 
 ```
-uname -a
+uname -r
+
+sudo apt-get update && sudo apt-get upgrade && sudo apt-get dist-upgrade
+sudo apt install linux-image-generic-hwe-22.04
+sudo reboot
 ```
 
 [kernel-5.11]: https://www.intel.com/content/www/us/en/developer/tools/software-guard-extensions/linux-overview.html
