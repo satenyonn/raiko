@@ -131,6 +131,11 @@ mkdir ~/.config/raiko/secrets
 
 ```
 git clone -b taiko/alpha-7 https://github.com/taikoxyz/raiko.git
+
+cd /home/ubuntu/.config/sgx-pccs/raiko/provers/sgx/config
+sgx-guest.docker.manifest.template
+sgx.max_threads　が32であればOK
+
 cd raiko/docker
 docker compose build
 ```
