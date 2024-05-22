@@ -235,7 +235,7 @@ docker compose up init
 cd /home/ubuntu/taiko-mono/packages/protocol
 export FORK_URL=blockpi notionに有り
 echo $FORK_URL
-PRIVATE_KEY=0x ./script/config_dcap_sgx_verifier.sh --quote 00
+PRIVATE_KEY=0x ./script/config_dcap_sgx_verifier.sh --quote "00"  ”必要ぽい
 ```
 
 8. If you've been successful, you will get a SGX instance `id` which can be used to run Raiko!
